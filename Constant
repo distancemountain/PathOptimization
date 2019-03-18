@@ -1,0 +1,50 @@
+package com.huawei.it.optimization.common.TrafficOptimizationUtils;
+
+/**
+ * @version :1.0
+ * @author: Glory.Y
+ * @description: constant define
+ * @since: 2019-3-14
+ */
+public final class Constant {
+    /**
+     * .
+     */
+    private Constant() {
+        super();
+    }
+    /** Max value. */
+    public static final int INFINITY = Integer.MAX_VALUE;
+
+    /** edge weight. */
+    public static final int EDGE_NORMAL_WIGHT = 5;
+    /** prior edge weight. */
+    public static final int EDGE_PRIOR_WRIGHT = 1;
+
+    /** optimization avg mode. */
+    public static final int OPTIMIZATION_MODE_AVG = 0;
+
+    /** optimization peak mode. */
+    public static final int OPTIMIZATION_MODE_PEAK = 1;
+
+    /** success. */
+    public static final int OPTIMIZATION_RESULT_SUCCESS = 0;
+
+    /** failure. */
+    public static final int OPTIMIZATION_RESULT_FAILURE = 1;
+
+    /** Part. */
+    public static final int OPTIMIZATION_RESULT_PORTION = 2;
+
+    /** access level. */
+    public static final String GRID_PATTERN_ACCESS = "Access";
+
+    /** below l2/3 level. */
+    public static final String GRID_PATTERN_AGGREGATION = "Access,Agregation";
+
+    /** vertex. */
+    public static final String DIVIDEGRID_VERTEX = "vertices";
+
+    /** edge. */
+    public static final String DIVIDEGRID_EDGE = "edges";
+}
