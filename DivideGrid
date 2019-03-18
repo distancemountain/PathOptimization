@@ -1,0 +1,146 @@
+package com.huawei.it.optimization.common.TrafficOptimizationUtils;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * @version :1.0
+ * @author: Glory.Y
+ * @description: indenpence net grid
+ * @since: 2019-3-14
+ */
+
+/**
+ * divide grid.
+ */
+public class DivideGrid {
+    /** vertex list. */
+    private List<Vertex> vertices;
+    /** edge list. */
+    private List<Edge> edges;
+    /** vertex map. */
+    private Map<Long, Vertex> vertexMap;
+    /** edge map. */
+    private Map<Long, Edge> edgeMap;
+    /** pattern. */
+    private String pattern;
+
+    /**
+     * class construction.
+     * @param vertices1 vertex list
+     * @param edges1 edge list
+     * @param pattern1 pattern
+     */
+    public DivideGrid(final List<Vertex> vertices1,
+                      final List<Edge> edges1,
+                      final String pattern1) {
+        this.vertices = vertices1;
+        this.edges = edges1;
+        this.pattern = pattern1;
+        vertexMap = vertices.stream().collect(Collectors.toMap(
+                Vertex::getId, a -> a, (k1, k2) -> k1));
+        edgeMap = edges.stream().collect(Collectors.toMap(
+                Edge::getId, a -> a, (k1, k2) -> k1));
+    }
+
+    /**
+     * dividegrid class entrance function.
+     * @return map
+     */
+    public Map<Integer, Map<String, Object>> divide() {
+        buildGraph(vertices, edges);
+        Map<Integer, Map<String, Object>> gridMap = new HashMap<>();
+        Map<Long, Boolean> traceMap = new HashMap<>();
+        int count = 0;
+        for (Vertex vertex : vertices) {
+            if (!matchs(vertex.getLevel())) {
+                continue;
+            }
+            if (!traceMap.containsKey(vertex.getId())) {
+                count++;
+                List<Vertex> vertexList = new ArrayList<>();
+                List<Edge> edgeList = new ArrayList<>();
+                traceGrid(vertex, traceMap, vertexList);
+                Map<String, Object> map = new HashMap<>();
+                map.put(Constant.DIVIDEGRID_VERTEX, vertexList);
+                Map<Long, Vertex> mapVertex =
+                        vertexList.stream().collect(Collectors
+                                .toMap(Vertex::getId, a -> a, (k1, k2) -> k2));
+                edgeList = edges.stream().filter((p) ->
+                        mapVertex.containsKey(p.getaNeId())
+                                && mapVertex.containsKey(p.getaNeId())
+                ).collect(Collectors.toList());
+                map.put(Constant.DIVIDEGRID_EDGE, edgeList);
+                gridMap.put(count, map);
+            }
+        }
+        return gridMap;
+    }
+
+    /**
+     * grid divide alg.
+     * @param vertex vertex
+     * @param traceMap f
+     * @param vertexList f
+     */
+    private void traceGrid(final Vertex vertex,
+                          final Map<Long, Boolean> traceMap,
+                          final List<Vertex> vertexList) {
+        if (traceMap.containsKey(vertex.getId())) {
+            return;
+        }
+        traceMap.put(vertex.getId(), true);
+        if (!matchs(vertex.getLevel())) {
+            return;
+        }
+        vertexList.add(vertex);
+        List<Vertex> neighbourVertices = vertex.getNeighbourVertex();
+        for (Vertex neighbourVertex : neighbourVertices) {
+            traceGrid(neighbourVertex, traceMap, vertexList);
+        }
+    }
+
+    /**
+     * Patten matchs.
+     * @param level level
+     * @return n
+     */
+    private boolean matchs(final String level) {
+        return (pattern.indexOf(level) >= 0);
+    }
+
+    /**
+     * construct graph.
+     * @param vertices1 vertex list
+     * @param edges1 edge list
+     */
+    private void buildGraph(final List<Vertex> vertices1,
+                            final List<Edge> edges1) {
+        vertices1.forEach((p) -> {
+            p.setNeighbourEdge(new ArrayList<>());
+            p.setNeighbourVertex(new ArrayList<>());
+        });
+
+        edges1.forEach((p) -> {
+            p.setWeight(Constant.EDGE_NORMAL_WIGHT);
+        });
+
+        for (Edge edge : edges1) {
+            long aId = edge.getaNeId();
+            long zId = edge.getzNeId();
+            Vertex aVertex = vertexMap.get(aId);
+            Vertex zVertex = vertexMap.get(zId);
+            List<Vertex> aVertexList = aVertex.getNeighbourVertex();
+            aVertexList.add(zVertex);
+            List<Vertex> zVertexList = zVertex.getNeighbourVertex();
+            zVertexList.add(aVertex);
+            List<Edge> aEdgeList = aVertex.getNeighbourEdge();
+            aEdgeList.add(edge);
+            List<Edge> zEdgeList = zVertex.getNeighbourEdge();
+            zEdgeList.add(edge);
+        }
+    }
+}
