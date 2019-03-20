@@ -1,0 +1,92 @@
+package com.huawei.it.optimization.common.TrafficOptimizationUtils;
+
+import java.io.Serializable;
+
+/**
+ * @author: Glory.Y
+ * @description: TunnelLink
+ * @version :1.0
+ * @since: 2019-3-14
+ */
+public class TunnelLink implements Serializable {
+    /** . */
+    private long id;
+    /** . */
+    private long cityId;
+    /** . */
+    private long tunnelId;
+    /** . */
+    private long linkId;
+    /** . */
+    private int seq;
+
+    /**
+     * @return l
+     */
+    public final long getId() {
+        return id;
+    }
+
+    /**
+     * @param id1 id
+     */
+    public final void setId(final long id1) {
+        this.id = id1;
+    }
+
+    /**
+     * @return l
+     */
+    public final long getCityId() {
+        return cityId;
+    }
+
+    /**
+     * @param cityId1 c
+     */
+    public final void setCityId(final long cityId1) {
+        this.cityId = cityId1;
+    }
+
+    /**
+     * @return l
+     */
+    public final long getTunnelId() {
+        return tunnelId;
+    }
+
+    /**
+     * @param tunnelId1 f
+     */
+    public final void setTunnelId(final long tunnelId1) {
+        this.tunnelId = tunnelId1;
+    }
+
+    /**
+     * @return l
+     */
+    public final long getLinkId() {
+        return linkId;
+    }
+
+    /**
+     * @param linkId1 l
+     */
+    public final void setLinkId(final long linkId1) {
+        this.linkId = linkId1;
+    }
+
+    /**
+     * @return i
+     */
+    public final int getSeq() {
+        return seq;
+    }
+
+    /**
+     * @param seq1 s
+     */
+    public final void setSeq(final int seq1) {
+        this.seq = seq1;
+    }
+}
