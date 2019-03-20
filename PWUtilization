@@ -1,0 +1,186 @@
+package com.huawei.it.optimization.common.TrafficOptimizationUtils;
+
+import java.io.Serializable;
+
+/**
+ * @author: Glory.Y
+ * @description: PW Utilization
+ * @version :1.0
+ * @since: 2019-3-14
+ */
+public class PWUtilization implements Serializable {
+    /** . */
+    private long id;
+    /** . */
+    private long cityId;
+    /** . */
+    private long pwId;
+    /** . */
+    private String protectType; // 工作、保护
+    /** . */
+    private long azTunnelId;    //正向
+    /** . */
+    private long zaTunnelId;    //反向
+    /** . */
+    private double azFlowAvg;
+    /** . */
+    private double azFlowPeak;
+    /** . */
+    private double zaFlowAvg;
+    /** . */
+    private double zaFlowPeak;
+
+    /**
+     * .
+     * @return l
+     */
+    public final long getId() {
+        return id;
+    }
+
+    /**
+     *
+     * @param id1 id
+     */
+    public final void setId(final long id1) {
+        this.id = id1;
+    }
+
+    /**
+     *
+     * @return l
+     */
+    public final long getCityId() {
+        return cityId;
+    }
+
+    /**
+     *
+     * @param cityId1 c
+     */
+    public final void setCityId(final long cityId1) {
+        this.cityId = cityId1;
+    }
+
+    /**
+     *
+     * @return l
+     */
+    public final long getPwId() {
+        return pwId;
+    }
+
+    /**
+     *
+     * @param pwId1 pwId
+     */
+    public final void setPwId(final long pwId1) {
+        this.pwId = pwId1;
+    }
+
+    /**
+     *
+     * @return s
+     */
+    public final String getProtectType() {
+        return protectType;
+    }
+
+    /**
+     *
+     * @param protectType1 p
+     */
+    public final void setProtectType(final String protectType1) {
+        this.protectType = protectType1;
+    }
+
+    /**
+     *
+     * @return l
+     */
+    public final long getAzTunnelId() {
+        return azTunnelId;
+    }
+
+    /**
+     *
+     * @param azTunnelId1 s
+     */
+    public final void setAzTunnelId(final long azTunnelId1) {
+        this.azTunnelId = azTunnelId1;
+    }
+
+    /**
+     *
+     * @return l
+     */
+    public final long getZaTunnelId() {
+        return zaTunnelId;
+    }
+
+    /**
+     *
+     * @param zaTunnelId1 z
+     */
+    public final void setZaTunnelId(final long zaTunnelId1) {
+        this.zaTunnelId = zaTunnelId1;
+    }
+
+    /**
+     *
+     * @return  d
+     */
+    public final double getAzFlowAvg() {
+        return azFlowAvg;
+    }
+
+    /**
+     * @param azFlowAvg1 f
+     */
+    public final void setAzFlowAvg(final double azFlowAvg1) {
+        this.azFlowAvg = azFlowAvg1;
+    }
+
+    /**
+     *
+     * @return d
+     */
+    public final double getAzFlowPeak() {
+        return azFlowPeak;
+    }
+
+    /**
+     * @param azFlowPeak1 f
+     */
+    public final void setAzFlowPeak(final double azFlowPeak1) {
+        this.azFlowPeak = azFlowPeak1;
+    }
+
+    /**
+     * @return d
+     */
+    public final double getZaFlowAvg() {
+        return zaFlowAvg;
+    }
+
+    /**
+     * @param zaFlowAvg1 f
+     */
+    public final void setZaFlowAvg(final double zaFlowAvg1) {
+        this.zaFlowAvg = zaFlowAvg1;
+    }
+
+    /**
+     * @return d
+     */
+    public final double getZaFlowPeak() {
+        return zaFlowPeak;
+    }
+
+    /**
+     * @param zaFlowPeak1 f
+     */
+    public final void setZaFlowPeak(final double zaFlowPeak1) {
+        this.zaFlowPeak = zaFlowPeak1;
+    }
+}
