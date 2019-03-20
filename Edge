@@ -1,0 +1,238 @@
+package com.huawei.it.optimization.common.TrafficOptimizationUtils;
+
+import java.io.Serializable;
+
+/**
+ * @author: Glory.Y
+ * @description: edge
+ * @version :1.0
+ * @since: 2019-3-14
+ */
+public class Edge implements Serializable {
+    /** id.*/
+    private long id;
+    /** cityId. */
+    private long cityId;
+    /** name. */
+    private String name;
+    /** aNeId. */
+    private long aNeId;
+    /** zNeId. */
+    private long zNeId;
+    /** weight. */
+    private int weight;
+    /** rate. */
+    private double rate;
+    /** initRate. */
+    private double initRate;
+    /** recUtilizationAvg. */
+    private double recUtilizationAvg;
+    /** recUtilizationPeak. */
+    private double recUtilizationPeak;
+    /** transUtilizationAvg. */
+    private double transUtilizationAvg;
+    /** transUtilizationPeak. */
+    private double transUtilizationPeak;
+    /** utilizationAvg. */
+    private double utilizationAvg;
+    /** utilizationPeak. */
+    private double utilizationPeak;
+
+    /**
+     * @return l
+     */
+    public final long getId() {
+        return id;
+    }
+
+    /**
+     * @param id1 id
+     */
+    public final void setId(final long id1) {
+        this.id = id1;
+    }
+
+    /**
+     * @return l
+     */
+    public final long getCityId() {
+        return cityId;
+    }
+
+    /**
+     * @param cityId1 cityId
+     */
+    public final void setCityId(final long cityId1) {
+        this.cityId = cityId1;
+    }
+
+    /**
+     * @return s
+     */
+    public final String getName() {
+        return name;
+    }
+
+    /**
+     * @param name1 s
+     */
+    public final void setName(final String name1) {
+        this.name = name1;
+    }
+
+    /**
+     * @return l
+     */
+    public final long getaNeId() {
+        return aNeId;
+    }
+
+    /**
+     * @param aNeId1 l
+     */
+    public final void setaNeId(final long aNeId1) {
+        this.aNeId = aNeId1;
+    }
+
+    /**
+     * @return l
+     */
+    public final long getzNeId() {
+        return zNeId;
+    }
+
+    /**
+     * @param zNeId1 l
+     */
+    public final void setzNeId(final long zNeId1) {
+        this.zNeId = zNeId1;
+    }
+
+    /**
+     * @return i
+     */
+    public final int getWeight() {
+        return weight;
+    }
+
+    /**
+     * @param weight1 w
+     */
+    public final void setWeight(final int weight1) {
+        this.weight = weight1;
+    }
+
+    /**
+     * @return d
+     */
+    public final double getRate() {
+        return rate;
+    }
+
+    /**
+     * @param rate1 d
+     */
+    public final void setRate(final double rate1) {
+        this.rate = rate1;
+    }
+
+    /**
+     * @return d
+     */
+    public final double getInitRate() {
+        return initRate;
+    }
+
+    /**
+     * @param initRate1 d
+     */
+    public final void setInitRate(final double initRate1) {
+        this.initRate = initRate1;
+    }
+
+    /**
+     * @return d
+     */
+    public final double getRecUtilizationAvg() {
+        return recUtilizationAvg;
+    }
+
+    /**
+     * @param recUtilizationAvg1 r
+     */
+    public final void setRecUtilizationAvg(final double recUtilizationAvg1) {
+        this.recUtilizationAvg = recUtilizationAvg1;
+    }
+
+    /**
+     * @return d
+     */
+    public final double getRecUtilizationPeak() {
+        return recUtilizationPeak;
+    }
+
+    /**
+     * @param recUtilizationPeak1 d
+     */
+    public final void setRecUtilizationPeak(final double recUtilizationPeak1) {
+        this.recUtilizationPeak = recUtilizationPeak1;
+    }
+
+    /**
+     * @return d
+     */
+    public final double getTransUtilizationAvg() {
+        return transUtilizationAvg;
+    }
+
+    /**
+     * @param transUtilizationAvg1 d
+     */
+    public final void setTransUtilizationAvg(
+            final double transUtilizationAvg1) {
+        this.transUtilizationAvg = transUtilizationAvg1;
+    }
+
+    /**
+     * @return d
+     */
+    public final double getTransUtilizationPeak() {
+        return transUtilizationPeak;
+    }
+
+    /**
+     * @param transUtilizationPeak1 d
+     */
+    public final void setTransUtilizationPeak(
+            final double transUtilizationPeak1) {
+        this.transUtilizationPeak = transUtilizationPeak1;
+    }
+
+    /**
+     * @return d
+     */
+    public final double getUtilizationAvg() {
+        return utilizationAvg;
+    }
+
+    /**
+     * @param utilizationAvg1 f
+     */
+    public final void setUtilizationAvg(final double utilizationAvg1) {
+        this.utilizationAvg = utilizationAvg1;
+    }
+
+    /**
+     * @return d
+     */
+    public final double getUtilizationPeak() {
+        return utilizationPeak;
+    }
+
+    /**
+     * @param utilizationPeak1 d
+     */
+    public final void setUtilizationPeak(final double utilizationPeak1) {
+        this.utilizationPeak = utilizationPeak1;
+    }
+}
