@@ -1,0 +1,318 @@
+package com.huawei.it.optimization.common.TrafficOptimizationUtils;
+
+import java.io.Serializable;
+
+/**
+ * @author: Glory.Y
+ * @description: PW
+ * @since: 2019-3-14
+ * @version :1.0
+ */
+public class PW implements Serializable {
+    /** . */
+    private long id;
+    /** . */
+    private long cityId;
+    /** . */
+    private String name;
+    /** . */
+    private long workaNeId;
+    /** . */
+    private String workaPortNumber;
+    /** . */
+    private long workzNeId;
+    /** . */
+    private String workzPortNumber;
+    /** . */
+    private long workUpTunnelId;
+    /** . */
+    private long workDownTunnelId;
+    /** . */
+    private String workVlanId;
+    /** . */
+    private long protectaNeId;
+    /** . */
+    private String protectaPortNumber;
+    /** . */
+    private long protectzNeId;
+    /** . */
+    private String protectzPortNumber;
+    /** . */
+    private long protectUpTunnelId;
+    /** . */
+    private long protectDownTunnelId;
+    /** . */
+    private String protectVlanId;
+
+    /**
+     *
+     * @return l
+     */
+    public final long getId() {
+        return id;
+    }
+
+    /**
+     *
+     * @param id1 id
+     */
+    public final void setId(final long id1) {
+        this.id = id1;
+    }
+
+    /**
+     *
+     * @return l
+     */
+    public final long getCityId() {
+        return cityId;
+    }
+
+    /**
+     *
+     * @param cityId1 cityId
+     */
+    public final void setCityId(final long cityId1) {
+        this.cityId = cityId1;
+    }
+
+    /**
+     *
+     * @return s
+     */
+    public final String getName() {
+        return name;
+    }
+
+    /**
+     *
+     * @param name1 name
+     */
+    public final void setName(final String name1) {
+        this.name = name1;
+    }
+
+    /**
+     *
+     * @return l
+     */
+    public final long getWorkaNeId() {
+        return workaNeId;
+    }
+
+    /**
+     *
+     * @param workaNeId1 w
+     */
+    public final void setWorkaNeId(final long workaNeId1) {
+        this.workaNeId = workaNeId1;
+    }
+
+    /**
+     *
+     * @return s
+     */
+    public final String getWorkaPortNumber() {
+        return workaPortNumber;
+    }
+
+    /**
+     *
+     * @param workaPortNumber1 w
+     */
+    public final void setWorkaPortNumber(final String workaPortNumber1) {
+        this.workaPortNumber = workaPortNumber1;
+    }
+
+    /**
+     *
+     * @return l
+     */
+    public final long getWorkzNeId() {
+        return workzNeId;
+    }
+
+    /**
+     *
+     * @param workzNeId1 w
+     */
+    public final void setWorkzNeId(final long workzNeId1) {
+        this.workzNeId = workzNeId1;
+    }
+
+    /**
+     *
+     * @return s
+     */
+    public final String getWorkzPortNumber() {
+        return workzPortNumber;
+    }
+
+    /**
+     *
+     * @param workzPortNumber1 w
+     */
+    public final void setWorkzPortNumber(final String workzPortNumber1) {
+        this.workzPortNumber = workzPortNumber1;
+    }
+
+    /**
+     *
+     * @return l
+     */
+    public final long getWorkUpTunnelId() {
+        return workUpTunnelId;
+    }
+
+    /**
+     *
+     * @param workUpTunnelId1 w
+     */
+    public final void setWorkUpTunnelId(final long workUpTunnelId1) {
+        this.workUpTunnelId = workUpTunnelId1;
+    }
+
+    /**
+     *
+     * @return l
+     */
+    public final long getWorkDownTunnelId() {
+        return workDownTunnelId;
+    }
+
+    /**
+     *
+     * @param workDownTunnelId1 w
+     */
+    public final void setWorkDownTunnelId(final long workDownTunnelId1) {
+        this.workDownTunnelId = workDownTunnelId1;
+    }
+
+    /**
+     *
+     * @return s
+     */
+    public final String getWorkVlanId() {
+        return workVlanId;
+    }
+
+    /**
+     *
+     * @param workVlanId1 w
+     */
+    public final void setWorkVlanId(final String workVlanId1) {
+        this.workVlanId = workVlanId1;
+    }
+
+    /**
+     *
+     * @return l
+     */
+    public final long getProtectaNeId() {
+        return protectaNeId;
+    }
+
+    /**
+     *
+     * @param protectaNeId1 w
+     */
+    public final void setProtectaNeId(final long protectaNeId1) {
+        this.protectaNeId = protectaNeId1;
+    }
+
+    /**
+     *
+     * @return s
+     */
+    public final String getProtectaPortNumber() {
+        return protectaPortNumber;
+    }
+
+    /**
+     *
+     * @param protectaPortNumber1 p
+     */
+    public final void setProtectaPortNumber(final String protectaPortNumber1) {
+        this.protectaPortNumber = protectaPortNumber1;
+    }
+
+    /**
+     *
+     * @return l
+     */
+    public final long getProtectzNeId() {
+        return protectzNeId;
+    }
+
+    /**
+     *
+     * @param protectzNeId1 p
+     */
+    public final void setProtectzNeId(final long protectzNeId1) {
+        this.protectzNeId = protectzNeId1;
+    }
+
+    /**
+     *
+     * @return s
+     */
+    public final String getProtectzPortNumber() {
+        return protectzPortNumber;
+    }
+
+    /**
+     *
+     * @param protectzPortNumber1 s
+     */
+    public final void setProtectzPortNumber(final String protectzPortNumber1) {
+        this.protectzPortNumber = protectzPortNumber1;
+    }
+
+    /**
+     *
+     * @return l
+     */
+    public final long getProtectUpTunnelId() {
+        return protectUpTunnelId;
+    }
+
+    /**
+     *
+     * @param protectUpTunnelId1 p
+     */
+    public final void setProtectUpTunnelId(final long protectUpTunnelId1) {
+        this.protectUpTunnelId = protectUpTunnelId1;
+    }
+
+    /**
+     *
+     * @return l
+     */
+    public final long getProtectDownTunnelId() {
+        return protectDownTunnelId;
+    }
+
+    /**
+     *
+     * @param protectDownTunnelId1 p
+     */
+    public final void setProtectDownTunnelId(final long protectDownTunnelId1) {
+        this.protectDownTunnelId = protectDownTunnelId1;
+    }
+
+    /**
+     *
+     * @return s
+     */
+    public final String getProtectVlanId() {
+        return protectVlanId;
+    }
+
+    /**
+     *
+     * @param protectVlanId1 f
+     */
+    public final void setProtectVlanId(final String protectVlanId1) {
+        this.protectVlanId = protectVlanId1;
+    }
+}
