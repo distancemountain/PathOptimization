@@ -1,23 +1,29 @@
 package com.huawei.it.optimization.common.TrafficOptimizationUtils;
 
-import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Queue;
+import com.huawei.it.optimization.model.CongestionLinkPWVO;
+import com.huawei.it.optimization.model.ParameterSetVO;
+import com.huawei.it.optimization.service.TrafficService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
  * @version :1.0
- * @author: Glory.Y
+ * @author: Glory.Yin
  * @description: Flow optimization Alg.
  * @since: 2019-3-14
+ * 注意：PWUtilization表的数据是实际的流量数据，LinkUtilization表是数据是百分比数据。参数配置里面的数据也是百分比。
  */
 
-/***
- * .
+/**
+ * TrafficOptimizationAlg.
  */
 public class TrafficOptimizationAlg {
+    private static final Logger logger = LoggerFactory.getLogger(TrafficOptimizationAlg.class);
     /**
      * .
      */
@@ -42,22 +48,38 @@ public class TrafficOptimizationAlg {
      * .
      */
     private List<TunnelLink> tunnelLinks;
+
+    private List<ParameterSetVO> parameterSetVOS;
     /**
      * .
      */
     private List<PWUtilization> pwUtilizations;
-    /**
-     * .
-     */
-    private double threshold;
-    /**
-     * .
-     */
+
+    private List<LinkUtilization> linkUtilizations;
+
+    List<CongestionLinkPWVO> congestionLinkPWVOS;
+
+    private Map<Long, List<Long>> afterTunnelLinksMap;
+
+    private List<TunnelLink> backupTunnelLinks;
+
+    private List<TunnelLink> currentTunnelLinks;
+
     private int optimizationMode;
-    /**
-     * .
-     */
+
     private OptimizationPolicy optimizationPolicy;
+
+    private boolean isWorkProtectLinkSame = false;
+
+    private int maxJump = Integer.MAX_VALUE;
+
+    private boolean isWorkPW;
+
+    private Vertex sourceVertex;
+
+    private Vertex targetVertex;
+
+    private double congestionDefaultThreshold;
 
     /**
      * @param vertices1         vertices1
@@ -65,7 +87,6 @@ public class TrafficOptimizationAlg {
      * @param pws1              pws1
      * @param tunnelLinks1      tunnelLinks1
      * @param pwUtilizations1   pwUtilizations1
-     * @param threshold1        threshold1
      * @param optimizationMode1 optimizationMode1
      */
     public TrafficOptimizationAlg(final List<Vertex> vertices1,
@@ -73,38 +94,68 @@ public class TrafficOptimizationAlg {
                                   final List<PW> pws1,
                                   final List<TunnelLink> tunnelLinks1,
                                   final List<PWUtilization> pwUtilizations1,
-                                  final double threshold1,
-                                  final int optimizationMode1) {
+                                  final List<LinkUtilization> linkUtilizations1,
+                                  final List<ParameterSetVO> parameterSetVOS1,
+                                  final List<CongestionLinkPWVO> congestionLinkPWVOS1,
+                                  final int optimizationMode1,
+                                  final double congestionDefaultThreshold1) {
         this.vertices = vertices1;
         this.edges = edges1;
         this.pws = pws1;
         this.tunnelLinks = tunnelLinks1;
         this.pwUtilizations = pwUtilizations1;
-        this.threshold = threshold1;
+        this.linkUtilizations = linkUtilizations1;
+        this.parameterSetVOS = parameterSetVOS1;
+        this.congestionLinkPWVOS = congestionLinkPWVOS1;
         this.optimizationMode = optimizationMode1;
-        vertexMap = vertices.stream().collect(Collectors.toMap(Vertex::getId,
-                a -> a, (k1, k2) -> k1));
-        edgeMap = edges.stream().collect(Collectors.toMap(
-                Edge::getId, a -> a, (k1, k2) -> k1));
+        this.congestionDefaultThreshold = congestionDefaultThreshold1;
+        afterTunnelLinksMap = new HashMap<>();
+        vertexMap = vertices.stream().collect(Collectors.toMap(Vertex::getId, a -> a, (k1, k2) -> k1));
+        edgeMap = edges.stream().collect(Collectors.toMap(Edge::getId, a -> a, (k1, k2) -> k1));
+        parameterSetVOS.forEach((p) -> {
+            String[] ss = p.getCurrentValue().split(",");
+            p.setType(ss[0]);
+            p.setBandWidth(ss[1]);
+            if (isLetter(ss[2])) {
+                p.setAvgThreshold(1.0);
+            } else {
+                p.setAvgThreshold(Double.parseDouble(ss[2]) / 100);
+            }
+            if (isLetter(ss[3])) {
+                p.setPeakThreshold(1.0);
+            } else {
+                p.setPeakThreshold(Double.parseDouble(ss[3]) / 100);
+            }
+            p.setCount(Integer.parseInt(ss[4]));
+        });
     }
 
     /**
      * entrance function.
-     * @param linkIds linkIds
+     *
+     * @param linkIds             linkIds
      * @param optimizationPolicy1 optimizationPolicy
      * @return list
      */
-    public List<TrafficOptimizationResult> optimizationAll(
+    public List<TrafficOptimizationResult> optimizeAll(
             final List<Long> linkIds,
             final OptimizationPolicy optimizationPolicy1) {
         List<TrafficOptimizationResult> trafficOptimizationResults =
                 new ArrayList<>();
         initLinkUtilization();
         buildGraph(vertices, edges);
+
+
         for (Long linkId : linkIds) {
-            TrafficOptimizationResult trafficOptimizationResult =
-                    optimizationLink(linkId);
-            trafficOptimizationResults.add(trafficOptimizationResult);
+            vertices.forEach((p) -> {
+                p.setDistance(Constant.INFINITY);
+                p.setVertexPath(new ArrayList<>());
+                p.setEdgePath(new ArrayList<>());
+            });
+            TrafficOptimizationResult trafficOptimizationResult = optimizeLink(linkId);
+            if (trafficOptimizationResult != null) {
+                trafficOptimizationResults.add(trafficOptimizationResult);
+            }
         }
         return trafficOptimizationResults;
     }
@@ -113,32 +164,75 @@ public class TrafficOptimizationAlg {
      * @param linkId linkId
      * @return list
      */
-    private TrafficOptimizationResult optimizationLink(final long linkId) {
-        List<TrafficOptimizationLog> trafficOptimizationLogs =
-                new ArrayList<>();
-        List<PW> pwList = getPWListByLink(linkId);
-        List<PW> optimizationPws = rankoptimizationPWs(pwList, optimizationPolicy);
+    private TrafficOptimizationResult optimizeLink(final long linkId) {
+        List<TrafficOptimizationLog> trafficOptimizationLogs = new ArrayList<>();
         Edge optimizationEdge = edgeMap.get(linkId);
+
+        if (!isShutOff(optimizationEdge, 0, false)) {
+            logger.info("link={} is not congestion link", linkId);
+            return null;
+        }
+        List<PW> pwList = getPWListByLink(linkId, 0);
+        //工作
+        pwList.forEach((p) -> p.setType(0));
+
+        List<PW> pwList1 = getPWListByLink(linkId, 1);
+        pwList1.forEach((p) -> p.setType(1));
+        pwList.addAll(pwList1);
+
+        if (pwList.size() == 0) {
+            logger.info("link={} has not pws", linkId);
+            return null;
+        }
+        //List<PW> optimizationPws = rankOptimizationPWs(pwList, optimizationPolicy);
+        double threshold = getThreshold(optimizationEdge, optimizationMode);
         int code = 0;
-        double totalOptimizationFlow = 0;
-        double planOptimizeFlow = 0;
-        for (PW pw : optimizationPws) {
-            Vertex accessVertex = vertexMap.get(pw.getWorkaNeId());
-            Vertex l23Vertex = vertexMap.get(pw.getWorkzNeId());
-            double optimizationFlow = getPwFlow(pw);
-            long tunnelId = pw.getWorkUpTunnelId();
-            accessVertex.setDistance(0);
-            accessVertex.getVertexPath().add(accessVertex);
+        double totalOptimizationTraffic = 0;
+        double initUtilization = getLinkTrafficPercent(linkId);
+        double optimizeSize = optimizationEdge.getRate() * (initUtilization - threshold);
+        double planOptimizeTraffic = optimizeSize;
+        int seq = 0;
+        Map<Long, Integer> traceMap = new HashMap<>();
+        Collections.sort(pwList, (p1, p2) -> {
+            return (int) getPwTraffic(p2) - (int) getPwTraffic(p1);
+        });
+        /*
+        最少PW策略
+        PW pw = null;
+        while ((pw = getToOptimizePW(linkId, pwList, traceMap, optimizeSize)) != null) {
+        */
+        for (PW pw : pwList) {
+            if (!isCanOptimization(linkId, pw.getId())) {
+                continue;
+            }
+            sourceVertex = vertexMap.get(pw.getType() == 0 ? pw.getWorkaNeId() : pw.getProtectaNeId());
+            targetVertex = vertexMap.get(pw.getType() == 0 ? pw.getWorkzNeId() : pw.getProtectzNeId());
+            sourceVertex.setEdgePath(new ArrayList<>());
+            sourceVertex.setVertexPath(new ArrayList<>());
+            sourceVertex.setDistance(0);
+            targetVertex.setEdgePath(new ArrayList<>());
+            targetVertex.setVertexPath(new ArrayList<>());
+            targetVertex.setDistance(Constant.INFINITY);
+            long oneTunnelId = pw.getType() == 0 ? pw.getWorkUpTunnelId() : pw.getProtectUpTunnelId();
+            long anotherTunnelId = pw.getType() == 0 ? pw.getProtectUpTunnelId() : pw.getWorkUpTunnelId();
+            isWorkPW = pw.getType() == 0 ? true : false;
+            currentTunnelLinks = tunnelLinks.stream().filter((p) -> p.getTunnelId() == oneTunnelId).collect(Collectors.toList());
+            backupTunnelLinks = tunnelLinks.stream().filter((p) -> p.getTunnelId() == anotherTunnelId).collect(Collectors.toList());
+            double optimizationTraffic = getPwTraffic(pw);
+            sourceVertex.setDistance(0);
+            sourceVertex.getVertexPath().add(sourceVertex);
+            sourceVertex.setEdgePath(new ArrayList<>());
             Queue<Vertex> queue = new LinkedList<>();
-            queue.offer(accessVertex);
+            queue.offer(sourceVertex);
             while (!queue.isEmpty()) {
                 Vertex vertex = queue.poll();
                 List<Vertex> neighbourVertices = vertex.getNeighbourVertex();
                 List<Edge> neighbourEdges = vertex.getNeighbourEdge();
-                for (int i = 0; i < neighbourVertices.size(); i++) {
+                int size = neighbourVertices.size();
+                for (int i = 0; i < size; i++) {
                     Vertex neighbourVertex = neighbourVertices.get(i);
                     Edge neighbourEdge = neighbourEdges.get(i);
-                    if (isTurnOff(neighbourEdge, optimizationFlow)) {
+                    if (isShutOff(neighbourEdge, optimizationTraffic, true)) {
                         continue;
                     }
                     if (neighbourVertex.getDistance() == Constant.INFINITY) {
@@ -147,44 +241,60 @@ public class TrafficOptimizationAlg {
                     updateDistance(vertex, neighbourVertex, neighbourEdge);
                 }
             }
-            TrafficOptimizationLog trafficOptimizationLog =
-                    new TrafficOptimizationLog();
+            TrafficOptimizationLog trafficOptimizationLog = new TrafficOptimizationLog();
             trafficOptimizationLog.setLinkId(linkId);
             trafficOptimizationLog.setPwId(pw.getId());
             trafficOptimizationLog.setCityId(pw.getCityId());
-            trafficOptimizationLog.setTunnelId(tunnelId);
-            if (l23Vertex.getDistance() == Constant.INFINITY) {
+            trafficOptimizationLog.setTunnelId(oneTunnelId);
+            trafficOptimizationLog.setOptimizeMode(optimizationMode);
+            trafficOptimizationLog.setInitRate(optimizationEdge.getInitRate());
+            trafficOptimizationLog.setInitUtilization(initUtilization);
+            trafficOptimizationLog.setType(pw.getType());  // 0-work 1-protect
+
+            List<Long> beforeLinks = new ArrayList<>();
+            List<Long> afterLinks = new ArrayList<>();
+            List<TunnelLink> beforeTunnelLink =
+                    tunnelLinks.stream().filter((p) -> p.getTunnelId() == oneTunnelId).collect(Collectors.toList());
+            Collections.sort(beforeTunnelLink, (p1, p2) -> {
+                return p1.getSeq() - p2.getSeq();
+            });
+
+            beforeTunnelLink.forEach((p) -> beforeLinks.add(p.getLinkId()));
+            trafficOptimizationLog.setBeforeLinks(beforeLinks);
+            if (targetVertex.getDistance() == Constant.INFINITY) {
                 trafficOptimizationLog.setCode(Constant.OPTIMIZATION_RESULT_FAILURE);
             } else {
                 trafficOptimizationLog.setCode(Constant.OPTIMIZATION_RESULT_SUCCESS);
-                List<Edge> edgePath = l23Vertex.getEdgePath();
-                List<Long> beforeLinks = new ArrayList<>();
-                List<Long> afterLinks = new ArrayList<>();
-                List<TunnelLink> beforeTunnelLink =
-                        tunnelLinks.stream().filter((p) -> p.getTunnelId() == tunnelId)
-                                .collect(Collectors.toList());
-                beforeTunnelLink.forEach((p) -> beforeLinks.add(p.getLinkId()));
-                trafficOptimizationLog.setBeforeLinks(beforeLinks);
+                List<Edge> edgePath = targetVertex.getEdgePath();
+                // re-order
                 edgePath.forEach((p) -> afterLinks.add(p.getId()));
                 trafficOptimizationLog.setAfterLinks(afterLinks);
-                trafficOptimizationLog.setLinkInitRate(optimizationEdge.getInitRate());
-                trafficOptimizationLog.setReduceUtilization(optimizationFlow);
-                totalOptimizationFlow += optimizationFlow;
+                trafficOptimizationLog.setReduceRate(optimizationTraffic);
+                trafficOptimizationLog.setReduceUtilization(optimizationTraffic / optimizationEdge.getRate());
+
+                totalOptimizationTraffic += optimizationTraffic;
+                optimizeSize -= optimizationTraffic;
+                updateLinkTraffic(beforeLinks, afterLinks, optimizationTraffic, optimizationMode);
+                updateTunnelLink(oneTunnelId, afterLinks);
             }
+            trafficOptimizationLog.setSeq(seq);
             trafficOptimizationLogs.add(trafficOptimizationLog);
-            if (totalOptimizationFlow >= planOptimizeFlow) {
+            seq++;
+
+            if (planOptimizeTraffic < totalOptimizationTraffic) {
                 break;
             }
         }
-        TrafficOptimizationResult trafficOptimizationResult =
-                new TrafficOptimizationResult();
-        if (totalOptimizationFlow == 0) {
+
+        TrafficOptimizationResult trafficOptimizationResult = new TrafficOptimizationResult();
+        if (totalOptimizationTraffic == 0) {
             code = Constant.OPTIMIZATION_RESULT_FAILURE;
-        } else if (totalOptimizationFlow > planOptimizeFlow) {
+        } else if (totalOptimizationTraffic >= planOptimizeTraffic) {
             code = Constant.OPTIMIZATION_RESULT_SUCCESS;
         } else {
             code = Constant.OPTIMIZATION_RESULT_PORTION;
         }
+        logger.info("link={} optimize : code={}", linkId, code);
         trafficOptimizationResult.setCode(code);
         trafficOptimizationResult.setTrafficOptimizationLogs(trafficOptimizationLogs);
         return trafficOptimizationResult;
@@ -196,24 +306,25 @@ public class TrafficOptimizationAlg {
      * @param vertices1 ver
      * @param edges1    ded
      */
-    private void buildGraph(List<Vertex> vertices1, List<Edge> edges1) {
+    private void buildGraph(final List<Vertex> vertices1,
+                            final List<Edge> edges1) {
         vertices1.forEach((p) -> {
-            p.setEdgePath(new ArrayList<>());
-            p.setVertexPath(new ArrayList<>());
+            //p.setEdgePath(new ArrayList<>());
+            //p.setVertexPath(new ArrayList<>());
             p.setNeighbourEdge(new ArrayList<>());
             p.setNeighbourVertex(new ArrayList<>());
-            p.setDistance(Constant.INFINITY);
+            //p.setDistance(Constant.INFINITY);
         });
 
-        edges1.forEach((p) -> {
-            p.setWeight(Constant.EDGE_NORMAL_WIGHT);
-        });
-
-        for (Edge edge : edges1) {
+        edges1.forEach((edge) -> {
+            edge.setWeight(Constant.EDGE_NORMAL_WIGHT);
             long aId = edge.getaNeId();
             long zId = edge.getzNeId();
             Vertex aVertex = vertexMap.get(aId);
             Vertex zVertex = vertexMap.get(zId);
+            if (aVertex == null || zVertex == null) {
+                return;
+            }
             List<Vertex> aVertexList = aVertex.getNeighbourVertex();
             aVertexList.add(zVertex);
             List<Vertex> zVertexList = zVertex.getNeighbourVertex();
@@ -222,26 +333,26 @@ public class TrafficOptimizationAlg {
             aEdgeList.add(edge);
             List<Edge> zEdgeList = zVertex.getNeighbourEdge();
             zEdgeList.add(edge);
-        }
+        });
     }
 
     /**
      * @param linkId linkId
      * @return list
      */
-    private List<PW> getPWListByLink(final long linkId) {
+    private List<PW> getPWListByLink(final long linkId, int pwType) {
         List<TunnelLink> tunnelLinkList =
-                tunnelLinks.stream().filter((p) -> p.getLinkId() == linkId)
-                        .collect(Collectors.toList());
+                tunnelLinks.stream().filter((p) -> p.getLinkId() == linkId).collect(Collectors.toList());
         List<Long> tunnelLinkIds = new ArrayList<>();
-        tunnelLinks.forEach((p) -> {
+        tunnelLinkList.forEach((p) -> {
             tunnelLinkIds.add(p.getTunnelId());
         });
-
-        List<PW> pwList =
-                pws.stream().filter((p) -> tunnelLinkIds
-                        .contains(p.getWorkUpTunnelId()))
-                        .collect(Collectors.toList());
+        List<PW> pwList = null;
+        if (pwType == 0) { //工作
+            pwList = pws.stream().filter((p) -> tunnelLinkIds.contains(p.getWorkUpTunnelId())).collect(Collectors.toList());
+        } else {
+            pwList = pws.stream().filter((p) -> tunnelLinkIds.contains(p.getProtectUpTunnelId())).collect(Collectors.toList());
+        }
         return pwList;
     }
 
@@ -250,8 +361,9 @@ public class TrafficOptimizationAlg {
      * @param optimizationPolicy1 optimizationPolicy
      * @return list
      */
-    private List<PW> rankoptimizationPWs(final List<PW> pws1,
-                                         final OptimizationPolicy optimizationPolicy1) {
+    private List<PW> rankOptimizationPWs(
+            final List<PW> pws1,
+            final OptimizationPolicy optimizationPolicy1) {
         if (optimizationPolicy1 == null) {
             return pws1;
         }
@@ -263,20 +375,30 @@ public class TrafficOptimizationAlg {
      * @param neighbourVertex n
      * @param edge            e
      */
-    private void updateDistance(
-            Vertex vertex,
-            Vertex neighbourVertex,
-            final Edge edge) {
-        if (neighbourVertex.getDistance()
-                > vertex.getDistance() + edge.getWeight()) {
-            neighbourVertex
-                    .setDistance(vertex.getDistance() + edge.getWeight());
+    private void updateDistance(Vertex vertex, Vertex neighbourVertex, final Edge edge) {
+        if (neighbourVertex.getDistance() > vertex.getDistance() + edge.getWeight()) {
+            neighbourVertex.setDistance(vertex.getDistance() + edge.getWeight());
             List<Edge> edgePath = vertex.getEdgePath();
             List<Vertex> vertexPath = vertex.getVertexPath();
-            edgePath.add(edge);
-            vertexPath.add(neighbourVertex);
-            neighbourVertex.setEdgePath(edgePath);
-            neighbourVertex.setVertexPath(vertexPath);
+            List<Edge> neighbourEdgePath = neighbourVertex.getEdgePath();
+            if (neighbourEdgePath == null) {
+                neighbourEdgePath = new ArrayList<>();
+            } else {
+                neighbourEdgePath.clear();
+            }
+            neighbourEdgePath.addAll(edgePath);
+            neighbourEdgePath.add(edge);
+            neighbourVertex.setEdgePath(neighbourEdgePath);
+
+            List<Vertex> neighbourVertexPath = neighbourVertex.getVertexPath();
+            if (neighbourVertexPath == null) {
+                neighbourVertexPath = new ArrayList<>();
+            } else {
+                neighbourVertexPath.clear();
+            }
+            neighbourVertexPath.addAll(vertexPath);
+            neighbourVertexPath.add(neighbourVertex);
+            neighbourVertex.setVertexPath(neighbourVertexPath);
         }
     }
 
@@ -285,35 +407,98 @@ public class TrafficOptimizationAlg {
      * @param optimizationFlow o
      * @return b
      */
-    private boolean isTurnOff(
-            final Edge edge,
-            final double optimizationFlow) {
-        double utilization = 0;
-        if (optimizationMode == Constant.OPTIMIZATION_MODE_AVG) {
-            utilization = edge.getUtilizationAvg();
-        } else {
-            utilization = edge.getUtilizationPeak();
+    private boolean isShutOff(final Edge edge, final double optimizationFlow, boolean isCurrentJudge) {
+        double utilization = 0d;
+        double optimizationFlow1 = optimizationFlow;
+        if (edge == null) {
+            return true;
         }
-        return edge.getRate() * threshold < optimizationFlow + utilization;
+        if (isCurrentJudge) {
+            if (isCurrentLink(edge)) {
+                optimizationFlow1 = 0;
+            }
+        }
+
+        Vertex av = vertexMap.get(edge.getaNeId());
+        Vertex zv = vertexMap.get(edge.getzNeId());
+        if (isBackupLink(edge) || isL23Vertex(av) || isL23Vertex(zv)) {
+            return true;
+        }
+
+        double threshold = getThreshold(edge, optimizationMode);
+        if (optimizationMode == Constant.OPTIMIZATION_MODE_AVG) {
+            utilization = max(edge.getRecUtilizationAvg(), edge.getTransUtilizationAvg());
+        } else {
+            utilization = max(edge.getRecUtilizationPeak(), edge.getTransUtilizationPeak());
+        }
+
+        return edge.getRate() * threshold < optimizationFlow1 + edge.getRate() * utilization;
+    }
+
+    private boolean isCurrentLink(final Edge edge) {
+        for (TunnelLink tunnelLink : currentTunnelLinks) {
+            if (tunnelLink.getLinkId() == edge.getId()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isBackupLink(final Edge edge) {
+        if (isWorkProtectLinkSame) {
+            return false;
+        }
+        if (backupTunnelLinks == null) {
+            return false;
+        }
+
+        for (TunnelLink tunnelLink : backupTunnelLinks) {
+            if (tunnelLink.getLinkId() == edge.getId()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isL23Vertex(final Vertex vertex) {
+
+        if (Constant.NE_LEVEL_L23.equalsIgnoreCase(vertex.getLevel()) && vertex.getId() != targetVertex.getId()) {
+            if (isWorkPW) {
+                return true;
+            } else {
+                if (!isInVertexList(vertex, targetVertex.getNeighbourVertex())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isInVertexList(Vertex v, List<Vertex> list) {
+        if (list == null) {
+            return false;
+        }
+        for (Vertex vertex : list) {
+            if (v.getId() == vertex.getId()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
      * @param pw pw
      * @return d
      */
-    private double getPwFlow(final PW pw) {
+    private double getPwTraffic(final PW pw) {
+        String pwType = pw.getType() == 0 ? Constant.PW_TYPE_WORK : Constant.PW_TYPE_PROTECT;
         for (PWUtilization pwUtilization : pwUtilizations) {
-            if (pwUtilization.getPwId() == pw.getId()) {
-                if (optimizationMode == Constant.OPTIMIZATION_MODE_AVG) {
-                    return max(pwUtilization.getAzFlowAvg(),
-                            pwUtilization.getZaFlowAvg());
-                } else {
-                    return max(pwUtilization.getAzFlowPeak(),
-                            pwUtilization.getZaFlowPeak());
-                }
+            if (pwUtilization.getPwId() == pw.getId()
+                    && pwType.equalsIgnoreCase(pwUtilization.getProtectType())) {
+                return pwUtilization.getTrafficMax();
             }
         }
-        return 0;
+        return 0.1d;
     }
 
     /**
@@ -332,27 +517,205 @@ public class TrafficOptimizationAlg {
      * initLinkUtilization.
      */
     private void initLinkUtilization() {
-        for (PWUtilization pwUtilization : pwUtilizations) {
-            List<TunnelLink> tunnelLinkList =
-                    tunnelLinks.stream().filter((p) -> p.getTunnelId()
-                            == pwUtilization.getAzTunnelId()).collect(Collectors.toList());
-            for (TunnelLink tunnelLink : tunnelLinkList) {
-                Edge edge = edgeMap.get(tunnelLink.getLinkId());
-                edge.setRecUtilizationAvg(pwUtilization.getZaFlowAvg()
-                        + edge.getRecUtilizationAvg());
-                edge.setRecUtilizationPeak(pwUtilization.getZaFlowPeak()
-                        + edge.getRecUtilizationPeak());
-                edge.setTransUtilizationAvg(pwUtilization.getAzFlowAvg()
-                        + edge.getTransUtilizationAvg());
-                edge.setTransUtilizationPeak(pwUtilization.getAzFlowPeak()
-                        + edge.getTransUtilizationPeak());
+        for (LinkUtilization p : linkUtilizations) {
+            Edge edge = edgeMap.get(p.getLinkId());
+            if (edge == null) {
+                continue;
+            }
+            //edge.setInitRate(edge.getRate());
+            p.setRecUtilizationAvg(p.getRecUtilizationAvg() / 100);
+            p.setRecUtilizationBusyAvg(p.getRecUtilizationBusyAvg() / 100);
+            p.setRecUtilizationPeak(p.getRecUtilizationPeak() / 100);
+            p.setTranUtilizationAvg(p.getTranUtilizationAvg() / 100);
+            p.setTranUtilizationBusyAvg(p.getTranUtilizationBusyAvg() / 100);
+            p.setTranUtilizationPeak(p.getTranUtilizationPeak() / 100);
+            //取忙时平均值
+            if (edge.getTransUtilizationAvg() < p.getTranUtilizationBusyAvg()) {
+                edge.setTransUtilizationAvg(p.getTranUtilizationBusyAvg());
+            }
+            if (edge.getTransUtilizationPeak() < p.getTranUtilizationPeak()) {
+                edge.setTransUtilizationPeak(p.getTranUtilizationPeak());
+            }
+            if (edge.getRecUtilizationAvg() < p.getRecUtilizationBusyAvg()) {
+
+                edge.setRecUtilizationAvg(p.getRecUtilizationBusyAvg());
+            }
+            if (edge.getRecUtilizationPeak() < p.getRecUtilizationPeak()) {
+                edge.setRecUtilizationPeak(p.getRecUtilizationPeak());
             }
         }
+    }
 
-        edges.forEach((p) -> p.setUtilizationAvg(max(p.getRecUtilizationAvg(),
-                p.getTransUtilizationAvg())));
+    /**
+     * 更新链路流量.
+     *
+     * @param beforeLinks
+     * @param afterLinks
+     * @param trafficSize
+     */
+    private void updateLinkTraffic(List<Long> beforeLinks, List<Long> afterLinks,
+                                   double trafficSize, int optimizationMode) {
+        beforeLinks.forEach((id) -> {
+            Edge edge = edgeMap.get(id);
+            if (optimizationMode == Constant.OPTIMIZATION_MODE_AVG) {
+                if (edge.getRecUtilizationAvg() > edge.getTransUtilizationAvg()) {
+                    edge.setRecUtilizationAvg(edge.getRecUtilizationAvg() - trafficSize);
+                } else {
+                    edge.setTransUtilizationAvg(edge.getRecUtilizationAvg() - trafficSize);
+                }
+            } else {
+                if (edge.getRecUtilizationPeak() > edge.getTransUtilizationPeak()) {
+                    edge.setRecUtilizationPeak(edge.getRecUtilizationPeak() - trafficSize);
+                } else {
+                    edge.setTransUtilizationPeak(edge.getRecUtilizationPeak() - trafficSize);
+                }
+            }
+        });
 
-        edges.forEach((p) -> p.setUtilizationPeak(max(p.getRecUtilizationPeak(),
-                p.getTransUtilizationPeak())));
+        afterLinks.forEach((id) -> {
+            Edge edge = edgeMap.get(id);
+            if (optimizationMode == Constant.OPTIMIZATION_MODE_AVG) {
+                if (edge.getRecUtilizationAvg() > edge.getTransUtilizationAvg()) {
+                    edge.setRecUtilizationAvg(edge.getRecUtilizationAvg() + trafficSize);
+                } else {
+                    edge.setTransUtilizationAvg(edge.getRecUtilizationAvg() + trafficSize);
+                }
+            } else {
+                if (edge.getRecUtilizationPeak() > edge.getTransUtilizationPeak()) {
+                    edge.setRecUtilizationPeak(edge.getRecUtilizationPeak() + trafficSize);
+                } else {
+                    edge.setTransUtilizationPeak(edge.getRecUtilizationPeak() + trafficSize);
+                }
+            }
+        });
+    }
+
+    private void updateTunnelLink(long tunnelId, List<Long> afterLinks) {
+        afterTunnelLinksMap.put(tunnelId, afterLinks);
+    }
+
+    /**
+     * getTargetVertex.
+     *
+     * @param pw    pw
+     * @param level level
+     * @return v
+     */
+    private Vertex getTargetVertex(final PW pw,
+                                   final int level) {
+        return null;
+    }
+
+    private double getThreshold(Edge edge, int optimizationMode) {
+        //初始化时除以了100，这里不需要再做。
+        //for (ParameterSetVO parameterSetVO : parameterSetVOS) {
+        for (int i = 0; i < parameterSetVOS.size(); i++) {
+            if (parameterSetVOS.get(i).getType().equalsIgnoreCase(edge.getType())
+                    && (edge.getLevel().equalsIgnoreCase(parameterSetVOS.get(i).getBandWidth()) || "nolimit".equalsIgnoreCase(parameterSetVOS.get(i).getBandWidth()))) {
+                if (optimizationMode == Constant.OPTIMIZATION_MODE_AVG) {
+                    return parameterSetVOS.get(i).getAvgThreshold();
+                } else {
+                    return parameterSetVOS.get(i).getPeakThreshold();
+                }
+            }
+        }
+        return congestionDefaultThreshold;
+    }
+
+    private double getThreshold(Long linkId, int optimizationMode) {
+        Edge edge = edgeMap.get(linkId);
+        return getThreshold(edge, optimizationMode);
+    }
+
+    /**
+     * 利用正则表达式判断字符串是否是数字
+     *
+     * @param str
+     * @return
+     */
+    public boolean isLetter(String str) {
+        Pattern pattern = Pattern.compile("[A-Za-z]*");
+        Matcher isLetter = pattern.matcher(str);
+
+        if (!isLetter.matches()) {
+            return false;
+        }
+        return true;
+    }
+
+    private PW getToOptimizePW(Long linkId, List<PW> pws, Map<Long, Integer> traceMap, double optimizationSize) {
+        //pw 要求在传入参数之前按从大大小排序
+        PW prePW = null;
+        double trafficSize = 0d;
+        double preTrafficSize = 0d;
+        boolean bFlag = false;
+        if (optimizationSize <= 0) {
+            return null;
+        }
+        for (PW pw : pws) {
+            if (traceMap.containsKey(pw.getId())) {
+                break;
+            }
+            if (!isCanOptimization(linkId, pw.getId())) {
+                break;
+            }
+            trafficSize = getPwTraffic(pw);
+            if (trafficSize > optimizationSize) {
+                preTrafficSize = trafficSize;
+                bFlag = true;
+                prePW = pw;
+            } else {
+                if (bFlag == true) {
+                    traceMap.put(prePW.getId(), 1);
+                    return prePW;
+                } else {
+                    traceMap.put(pw.getId(), 1);
+                    return pw;
+                }
+            }
+        }
+        if (bFlag) {
+            traceMap.put(prePW.getId(), 1);
+            return prePW;
+        } else {
+            return null;
+        }
+    }
+
+    private double getLinkTrafficPercent(long linkId) {
+        for (LinkUtilization linkUtilization : linkUtilizations) {
+            if (linkUtilization.getLinkId() == linkId) {
+                if (optimizationMode == Constant.OPTIMIZATION_MODE_AVG) {
+                    return max(linkUtilization.getRecUtilizationBusyAvg(), linkUtilization.getTranUtilizationBusyAvg());
+                } else {
+                    return max(linkUtilization.getRecUtilizationPeak(), linkUtilization.getTranUtilizationPeak());
+                }
+            }
+        }
+        return 0d;
+    }
+
+    private boolean isCanOptimization(long linkId, long pwId) {
+        List<CongestionLinkPWVO> congestionLinkPWVOList =
+                congestionLinkPWVOS.stream().filter((p) -> linkId == p.getLinkId() && pwId == p.getPwId()).collect(Collectors.toList());
+        if (congestionLinkPWVOList == null || congestionLinkPWVOList.size() == 0) {
+            return true;
+        } else {
+            if (congestionLinkPWVOList.get(0).getAdjustMoveBoolean() == 1) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    public boolean isWorkProtectLinkSame() {
+        return isWorkProtectLinkSame;
+    }
+
+
+    public void setWorkProtectLinkSame(boolean workProtectLinkSame) {
+        isWorkProtectLinkSame = workProtectLinkSame;
     }
 }
+
