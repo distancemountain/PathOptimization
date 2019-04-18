@@ -3,7 +3,7 @@ package com.it.optimization.common.TrafficOptimizationUtils;
 import java.io.Serializable;
 
 /**
- * @author: Glory.Y
+ * @author: Glory.Yin
  * @description: PW Utilization
  * @version :1.0
  * @since: 2019-3-14
