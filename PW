@@ -1,9 +1,9 @@
-package com.huawei.it.optimization.common.TrafficOptimizationUtils;
+package com.it.optimization.common.TrafficOptimizationUtils;
 
 import java.io.Serializable;
 
 /**
- * @author: Glory.Y
+ * @author: Glory.Yin
  * @description: PW
  * @since: 2019-3-14
  * @version :1.0
